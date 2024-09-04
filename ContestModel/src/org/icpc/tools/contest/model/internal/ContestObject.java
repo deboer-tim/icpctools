@@ -1,7 +1,11 @@
 package org.icpc.tools.contest.model.internal;
 
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -9,6 +13,9 @@ import java.util.List;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
 import org.apache.batik.transcoder.SVGAbstractTranscoder;
@@ -24,6 +31,8 @@ import org.icpc.tools.contest.model.feed.ContestSource;
 import org.icpc.tools.contest.model.feed.JSONEncoder;
 import org.icpc.tools.contest.model.feed.RelativeTime;
 import org.icpc.tools.contest.model.feed.Timestamp;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.w3c.dom.svg.SVGDocument;
 
 public abstract class ContestObject implements IContestObject {
@@ -497,6 +506,63 @@ public abstract class ContestObject implements IContestObject {
 		} catch (Exception e) {
 			return null;
 		}
+	}
+
+	private static final String EXIF_MAGIC_STRING = "Exif";
+
+	/**
+	 * Returns the orientation obtained from the Exif metadata.
+	 *
+	 * @param reader An {@link ImageReader} which is reading the target image.
+	 * @param imageIndex The index of the image from which the Exif metadata should be read from.
+	 * @return The orientation information obtained from the Exif metadata, as a {@link Orientation}
+	 *         enum.
+	 * @throws IOException When an error occurs during reading.
+	 * @throws IllegalArgumentException If the {@link ImageReader} does not have the target image
+	 *            set, or if the reader does not have a JPEG open.
+	 */
+	public static Orientation getExifOrientation(ImageReader reader, int imageIndex) throws IOException {
+		IIOMetadata metadata = reader.getImageMetadata(imageIndex);
+		Node rootNode = metadata.getAsTree("javax_imageio_jpeg_image_1.0");
+
+		NodeList childNodes = rootNode.getChildNodes();
+
+		// Look for the APP1 containing Exif data, and retrieve it.
+		for (int i = 0; i < childNodes.getLength(); i++) {
+			if ("markerSequence".equals(childNodes.item(i).getNodeName())) {
+				NodeList markerSequenceChildren = childNodes.item(i).getChildNodes();
+
+				for (int j = 0; j < markerSequenceChildren.getLength(); j++) {
+					IIOMetadataNode metadataNode = (IIOMetadataNode) (markerSequenceChildren.item(j));
+
+					byte[] bytes = (byte[]) metadataNode.getUserObject();
+					if (bytes == null) {
+						continue;
+					}
+
+					byte[] magicNumber = new byte[4];
+					ByteBuffer.wrap(bytes).get(magicNumber);
+
+					if (EXIF_MAGIC_STRING.equals(new String(magicNumber))) {
+						return getOrientationFromExif(bytes);
+					}
+				}
+			}
+		}
+
+		return null;
+	}
+
+	private static BufferedImage transform(BufferedImage bimage, AffineTransform transform) throws IOException {
+		// Create an transformation operation
+		AffineTransformOp op = new AffineTransformOp(transform, AffineTransformOp.TYPE_BICUBIC);
+
+		// Create an instance of the resulting image, with the same width, height and image type than
+		// the referenced one
+		BufferedImage destinationImage = new BufferedImage(bimage.getWidth(), bimage.getHeight(), bimage.getType());
+		op.filter(bimage, destinationImage);
+
+		return destinationImage;
 	}
 
 	private static SVGDocument loadSVG(File svgFile) throws Exception {
