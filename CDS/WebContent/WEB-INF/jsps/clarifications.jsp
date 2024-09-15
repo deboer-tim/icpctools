@@ -92,7 +92,7 @@ $(document).ready(function () {
 	
 	$.when(contest.loadAccess()).done(function () {
         var access = contest.getAccess();
-        if (access.capabilities.some(e => (e === 'team_clar' || e === 'admin_clar')))
+        if (access.capabilities.some(e => (e === 'team_clar' || e === 'judge_clar' || e === 'admin_clar')))
 	      $("#submit-clar-ui").show();
     })
 })

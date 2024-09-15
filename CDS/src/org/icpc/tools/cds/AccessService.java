@@ -35,14 +35,16 @@ public class AccessService {
 				caps.add("team_clar");
 			}
 			if ("judge".equals(type)) {
-				caps.add("admin_clar");
-				caps.add("commentary_submit");
+				caps.add("judge_clar");
+				caps.add("judge_comment");
 			}
 			if ("admin".equals(type)) {
 				caps.add("contest_start");
+				caps.add("contest_thaw");
 				caps.add("admin_submit");
 				caps.add("admin_clar");
-				caps.add("commentary_submit");
+				caps.add("judge_clar");
+				caps.add("judge_comment");
 			}
 		}
 		String user = request.getRemoteUser();
@@ -60,6 +62,9 @@ public class AccessService {
 			je.encodePrimitive("capabilities", "[\"" + String.join("\",\"", caps) + "\"]");
 
 		// write endpoints
+		// TODO - verify that public can see problems and submissions type before the start of the
+		// contest
+		// but not
 		je.writeSeparator();
 		je.openChildArray("endpoints");
 		Set<String>[] allKnownProperties = cc.getContestByRole(request).getKnownProperties();

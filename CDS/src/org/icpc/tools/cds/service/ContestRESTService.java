@@ -404,6 +404,27 @@ public class ContestRESTService extends HttpServlet {
 			return false;
 
 		if (ext instanceof File) {
+			if (obj instanceof ISubmission) {
+				ISubmission s = (ISubmission) obj;
+				if (!cc.isAnalyst(request) && "files".equals(url)) {
+					response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+					return true;
+				} else if (!cc.isAnalyst(request) && url.startsWith("reactions") && !contest.isBeforeFreeze(s)) {
+					response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+					return true;
+				}
+			}
+
+			if (obj instanceof ITeam) {
+				if (!cc.isAnalyst(request)
+						// TODO - temporary for NAC 23
+						// && (url.startsWith("key_log") || url.startsWith("tool_data") ||
+						// url.startsWith("backup"))) {
+						&& (url.startsWith("backup"))) {
+					response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+					return true;
+				}
+			}
 			cc.incrementDownload();
 			HttpHelper.sendFile(request, response, (File) ext);
 			return true;
@@ -953,6 +974,23 @@ public class ContestRESTService extends HttpServlet {
 				obj.props.put("from_team_id", teamId2);
 		}
 
+		if (cc.isJudge(request)) {
+			// TODO
+			if (toTeamId != null) {
+				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Team cannot send to another team");
+				return null;
+			}
+			String teamId2 = contest.getTeamIdFromUser(request.getRemoteUser());
+			if (teamId2 == null) {
+				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Could not determine request user's team");
+				return null;
+			}
+			if (fromTeamId != null && !fromTeamId.equals(teamId2)) {
+				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Cannot submit clarification for a different team");
+				return null;
+			}
+		}
+
 		if ((cc.isAdmin(request) || cc.isJudge(request)) && fromTeamId != null) {
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Cannot send on behalf of a team");
 			return null;
@@ -1058,10 +1096,22 @@ public class ContestRESTService extends HttpServlet {
 	protected JsonObject postCommentary(HttpServletRequest request, HttpServletResponse response, ConfiguredContest cc,
 			JsonObject obj) throws IOException {
 		if (!cc.isAdmin(request) && !cc.isJudge(request))
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Only judges and admins can post commentary");
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Account not authorized to post commentary");
+
+		if (!cc.isAdmin(request)) {
+			String id = obj.getString("id");
+			String time = obj.getString("time");
+			String contestTime = obj.getString("contest_time");
+			String source = obj.getString("source_id");
+
+			if (id != null || time != null || contestTime != null || source != null) {
+				response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+						"Cannot assign id, time, contest_time, or source_id");
+				return null;
+			}
+		}
 
 		String message = obj.getString("message");
-
 		if (message == null || message.isEmpty()) {
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Message is missing");
 			return null;

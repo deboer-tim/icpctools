@@ -570,6 +570,36 @@ public class RESTContestSource extends DiskContestSource {
 		if (url == null || feedFile != null)
 			return;
 
+		// TODO - should check /access on startup so that the CDS knows attributes of objects that
+		// don't exist yet
+		/*try {
+			JsonObject obj = getAccess();
+			Object[] endpoints = obj.getArray("endpoints");
+			for (Object o : endpoints) {
+				obj = (JsonObject) o;
+				String typeName = obj.getString("type");
+				IContestObject.ContestType type = IContestObject.getTypeByName(typeName);
+				if (type != null) {
+					// supported type
+					Map<String, Object> props = new HashMap<>();
+					Object[] props2 = obj.getArray("properties");
+					for (Object ob : props2)
+						props.put(ob.toString(), ob);
+
+					contest.addKnownProperty(type, props);
+				}
+
+				// TODO - not all properties will be supported by the CDS
+				// TODO - not all properties will be visible to each role, do we need to filter?
+
+				// to make sure all the properties are actually supported, create a temporary object
+				// and set values
+
+			}
+		} catch (Exception e) {
+			Trace.trace(Trace.WARNING, "Couldn't check access endpoint", e);
+		}*/
+
 		InputStream in = null;
 
 		try {

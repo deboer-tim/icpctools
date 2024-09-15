@@ -87,7 +87,7 @@ $(document).ready(function () {
 	
 	$.when(contest.loadAccess()).done(function () {
         var access = contest.getAccess();
-        if (access.capabilities.some(e => e === 'commentary_submit'))
+        if (access.capabilities.some(e => e === 'judge_comment'))
 	        $("#submit-comment-ui").show();
     })
 })
