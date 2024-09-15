@@ -15,14 +15,14 @@ import java.util.zip.CRC32;
 /**
  * Ogg container handler.
  */
-public class OggHandler {
+public class OggTest {
 
 	public static void main(String[] args) throws Exception {
 		byte[] b = new byte[27]; // a little over 90K
 		// header - bitstream - page - granule - size - crc
 
-		InputStream in = new FileInputStream(new File("/Users/deboer/Downloads/pat1.ogg"));
-		OutputStream out = new FileOutputStream(new File("/Users/deboer/Downloads/test3-out.ogg"));
+		InputStream in = new FileInputStream(new File("/Users/deboer/Downloads/pat2.ogg"));
+		OutputStream out = new FileOutputStream(new File("/Users/deboer/Downloads/test2-out.ogg"));
 
 		Map<Integer, byte[]> streams = new HashMap<Integer, byte[]>();
 
@@ -66,8 +66,9 @@ public class OggHandler {
 					+ "." + Byte.toUnsignedInt(b[21]); // 0.0.0.0 -> 1.0.0.0 -> 2.0.0.0
 			String gp = Byte.toUnsignedInt(b[6]) + "-" + Byte.toUnsignedInt(b[7]) + "-" + Byte.toUnsignedInt(b[8]) + "-"
 					+ Byte.toUnsignedInt(b[9]) + "-" + Byte.toUnsignedInt(b[12]) + "-" + Byte.toUnsignedInt(b[13]);
-			String chk = Byte.toUnsignedInt(b[22]) + "_" + Byte.toUnsignedInt(b[23]) + "_" + Byte.toUnsignedInt(b[24])
-					+ "_" + Byte.toUnsignedInt(b[25]);
+			// String chk = Byte.toUnsignedInt(b[22]) + "_" + Byte.toUnsignedInt(b[23]) + "_" +
+			// Byte.toUnsignedInt(b[24])
+			// + "_" + Byte.toUnsignedInt(b[25]);
 			ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
 			/*buffer.order(ByteOrder.LITTLE_ENDIAN);
 			buffer.put(b, 22, 4);
@@ -84,7 +85,7 @@ public class OggHandler {
 			// System.out.print(" " + psc2);
 			// System.out.print(" " + gp);
 
-			if ("0-0-0-0-0-0".equals(gp) || count > 50) {
+			if ("0-0-0-0-0-0".equals(gp) || count > 100) {
 				// if (b[6] == 0 || count > 100) {// || Byte.toUnsignedInt(b[14]) == 64) {
 				doOut = true;
 				// System.out.print("x");
@@ -173,11 +174,12 @@ public class OggHandler {
 
 			long crc_reg = 0;
 
-			for (int i = 0; i < bbb.length; i++) {
+			// TODO temp removal
+			/*for (int i = 0; i < bbb.length; i++) {
 				int tmp = (int) (((crc_reg >>> 24) & 0xff) ^ touint(bbb[i]));
 				crc_reg = (crc_reg << 8) ^ crc_lookup[tmp];
 				crc_reg &= 0xffffffff;
-			}
+			}*/
 
 			// read segment sizes
 			byte[] bb = new byte[numSegments];
@@ -186,12 +188,13 @@ public class OggHandler {
 				n += in.read(bb, n, bb.length - n);
 
 			// ---- CRC
-			crc.update(bb);
+			// TODO temp removal
+			/*crc.update(bb);
 			for (int i = 0; i < bb.length; i++) {
 				int tmp = (int) (((crc_reg >>> 24) & 0xff) ^ touint(bb[i]));
 				crc_reg = (crc_reg << 8) ^ crc_lookup[tmp];
 				crc_reg &= 0xffffffff;
-			}
+			}*/
 
 			// total segments
 			int segmentLength = 0;
@@ -224,10 +227,10 @@ public class OggHandler {
 				while (n < len)
 					n += in.read(d, n, d.length - n);
 				// segmentLength += len;
-
+			
 				if (doOut)
 					out.write(d);
-
+			
 				// --- CRC ---
 				crc.update(d);
 				for (int i = 0; i < d.length; i++) {
@@ -265,10 +268,6 @@ public class OggHandler {
 				out.write(d);
 			}
 
-			String chk2 = Byte.toUnsignedInt(b[22]) + "_" + Byte.toUnsignedInt(b[23]) + "_" + Byte.toUnsignedInt(b[24])
-					+ "_" + Byte.toUnsignedInt(b[25]);
-			System.out.print("\t" + chk + "\t" + chk2);
-
 			// System.out.println(" " + (int) crc.getValue() + " - " + psc3);
 			System.out.println();
 		}
@@ -296,9 +295,9 @@ public class OggHandler {
 		long[] crc_lookup = new long[256];
 		for (int i = 0; i < 256; i++)
 			crc_lookup[i] = _ogg_crc_entry(i);
-	
+
 		long crc_reg = 0;
-	
+
 		for (int i = 0; i < b.length; i++) {
 			int tmp = (int) (((crc_reg >>> 24) & 0xff) ^ touint(b[i]));
 			crc_reg = (crc_reg << 8) ^ crc_lookup[tmp];
@@ -309,13 +308,13 @@ public class OggHandler {
 			crc_reg = (crc_reg << 8) ^ crc_lookup[tmp];
 			crc_reg &= 0xffffffff;
 		}
-	
+
 		byte[] sum = new byte[4];
 		sum[0] = (byte) (crc_reg & 0xffL);
 		sum[1] = (byte) ((crc_reg >>> 8) & 0xffL);
 		sum[2] = (byte) ((crc_reg >>> 16) & 0xffL);
 		sum[3] = (byte) ((crc_reg >>> 24) & 0xffL);
-	
+
 		return sum;
 	}*/
 }
