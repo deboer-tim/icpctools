@@ -426,18 +426,18 @@ public class BalloonUtility {
 			javax.swing.SwingUtilities.invokeLater(() -> {
 				try {
 					balloonPrinter.print(bc, b, messages);
+					if (!b.isPrinted()) {
+						b.setPrinted(true);
+						bc.save();
+					}
+					balloonTable.getDisplay().asyncExec(new Runnable() {
+						@Override
+						public void run() {
+							updateBalloon(b);
+						}
+					});
 				} catch (Exception e) {
 					ErrorHandler.error("Error printing balloon", e);
-				}
-			});
-			if (!b.isPrinted()) {
-				b.setPrinted(true);
-				bc.save();
-			}
-			balloonTable.getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					updateBalloon(b);
 				}
 			});
 		} catch (Exception e) {
