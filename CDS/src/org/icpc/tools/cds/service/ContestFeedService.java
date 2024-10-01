@@ -36,6 +36,7 @@ public class ContestFeedService {
 		NDJSONFeedWriter writer = new NDJSONFeedWriter(writer2);
 
 		final ContestObjectQueue queue = new ContestObjectQueue(ind);
+		// TODO: if no queue, send immediately
 		IContestListener listener = (contest2, obj, d) -> queue.add(obj, d);
 		contest.addListenerFromStart(listener);
 		final String prefix = NDJSONFeedWriter.getContestPrefix(contest);

@@ -39,7 +39,7 @@ import org.icpc.tools.contest.model.internal.State;
 import org.icpc.tools.contest.model.internal.Submission;
 import org.icpc.tools.contest.model.internal.Team;
 
-public class PlaybackContest extends Contest {
+public class PlaybackContest2 extends Contest {
 	private static final String LOGO = "logo";
 	private static final String PHOTO = "photo";
 	private static final String VIDEO = "video";
@@ -49,9 +49,6 @@ public class PlaybackContest extends Contest {
 	private static final String COUNTRY_FLAG = "country_flag";
 	private static final String PACKAGE = "package";
 	private static final String STATEMENT = "statement";
-	private static final String BACKUP = "backup";
-	private static final String KEY_LOG = "key_log";
-	private static final String TOOL_DATA = "tool_data";
 
 	protected ConfiguredContest cc;
 	protected String contestId;
@@ -59,10 +56,10 @@ public class PlaybackContest extends Contest {
 	protected boolean isTesting;
 	protected double timeMultiplier = Double.NaN;
 	protected Long startTime;
-	private Contest defaultConfig = new Contest(false);
+	private List<IContestObject> defaults = new ArrayList<>();
 	protected boolean configurationLoaded;
 
-	public PlaybackContest(ConfiguredContest cc) {
+	public PlaybackContest2(ConfiguredContest cc) {
 		contestId = cc.getId();
 		recordReactions = cc.isRecordingReactions();
 		this.cc = cc;
@@ -112,7 +109,7 @@ public class PlaybackContest extends Contest {
 			Trace.trace(Trace.USER, "Sleeping for " + (int) (dt / 100) / 10f + " seconds.");
 
 		try {
-			LockSupport.parkNanos(dt * 1_000_000);
+			LockSupport.parkNanos(dt * 1000000);
 		} catch (Exception e) {
 			// ignore
 		}
@@ -149,43 +146,45 @@ public class PlaybackContest extends Contest {
 
 		if (obj instanceof Info) {
 			Info i = (Info) obj;
-			i.setLogo(downloadMissingFiles(src, obj, LOGO, i.getLogo()));
-			i.setBanner(downloadMissingFiles(src, obj, BANNER, i.getBanner()));
+			downloadMissingFiles(src, obj, LOGO, i.getLogo());
+			downloadMissingFiles(src, obj, BANNER, i.getBanner());
+			src.attachLocalResources(i);
 		} else if (obj instanceof Problem) {
 			Problem p = (Problem) obj;
-			p.setPackage(downloadMissingFiles(src, obj, PACKAGE, p.getPackage()));
-			p.setStatement(downloadMissingFiles(src, obj, STATEMENT, p.getStatement()));
+			downloadMissingFiles(src, obj, PACKAGE, p.getPackage());
+			downloadMissingFiles(src, obj, STATEMENT, p.getStatement());
+			src.attachLocalResources(p);
 		} else if (obj instanceof Group) {
 			Group g = (Group) obj;
-			g.setLogo(downloadMissingFiles(src, obj, LOGO, g.getLogo()));
+			downloadMissingFiles(src, obj, LOGO, g.getLogo());
+			src.attachLocalResources(g);
 		} else if (obj instanceof Team) {
 			Team t = (Team) obj;
-			t.setPhoto(downloadMissingFiles(src, obj, PHOTO, t.getPhoto()));
-			t.setVideo(downloadMissingFiles(src, obj, VIDEO, t.getVideo()));
-			t.setBackup(downloadMissingFiles(src, obj, BACKUP, t.getBackup()));
-			t.setKeyLog(downloadMissingFiles(src, obj, KEY_LOG, t.getKeyLog()));
-			t.setToolData(downloadMissingFiles(src, obj, TOOL_DATA, t.getToolData()));
+			downloadMissingFiles(src, obj, PHOTO, t.getPhoto());
+			downloadMissingFiles(src, obj, VIDEO, t.getVideo());
+			// later: backup, key_log or tool data
+			src.attachLocalResources(t);
 		} else if (obj instanceof Person) {
-			Person p = (Person) obj;
-			p.setPhoto(downloadMissingFiles(src, obj, PHOTO, p.getPhoto()));
+			Person tm = (Person) obj;
+			downloadMissingFiles(src, obj, PHOTO, tm.getPhoto());
+			src.attachLocalResources(tm);
 		} else if (obj instanceof Organization) {
 			Organization o = (Organization) obj;
-			o.setLogo(downloadMissingFiles(src, obj, LOGO, o.getLogo()));
-			o.setCountryFlag(downloadMissingFiles(src, obj, COUNTRY_FLAG, o.getCountryFlag()));
+			downloadMissingFiles(src, obj, LOGO, o.getLogo());
+			downloadMissingFiles(src, obj, COUNTRY_FLAG, o.getCountryFlag());
+			src.attachLocalResources(o);
 		} else if (obj instanceof Submission) {
 			Submission s = (Submission) obj;
-			s.setFiles(downloadMissingFiles(src, obj, FILES, s.getFiles()));
-			s.setReaction(downloadMissingFiles(src, obj, REACTION, s.getReaction()));
+			downloadMissingFiles(src, obj, FILES, s.getFiles());
+			downloadMissingFiles(src, obj, REACTION, s.getReaction());
+			src.attachLocalResources(s);
 		}
 	}
 
-	protected FileReferenceList downloadMissingFiles(RESTContestSource src, IContestObject obj, String property,
+	protected boolean downloadMissingFiles(RESTContestSource src, IContestObject obj, String property,
 			FileReferenceList sourceFiles) {
 		if (src == null || sourceFiles == null || sourceFiles.isEmpty())
-			return sourceFiles;
-
-		// make sure the cache is up to date and find local files
-		src.updateCache(obj.getType(), obj.getId());
+			return false;
 		FileReferenceList localFiles = src.getFilesWithPattern(obj, property);
 
 		// if we don't have any files and there is at least one at the source, download everything
@@ -197,41 +196,34 @@ public class PlaybackContest extends Contest {
 					Trace.trace(Trace.ERROR, "Error downloading file: " + obj.getType() + ": " + obj.getId(), e);
 				}
 			}
-		} else {
-			// more complex matching
-			// for now, only download new images that have a different width & height or mime type
-			// than
-			// local images
-			for (FileReference sourceFile : sourceFiles) {
-				if (sourceFile.height <= 0 || sourceFile.width <= 0)
+
+			return true;
+		}
+
+		// more complex matching
+		// for now, only download new images that have a different width & height or mime type than
+		// local images
+		for (FileReference sourceFile : sourceFiles) {
+			if (sourceFile.height <= 0 || sourceFile.width <= 0)
+				continue;
+
+			boolean found = false;
+			for (FileReference currentRef : localFiles) {
+				if (currentRef.height == sourceFile.height && currentRef.width == sourceFile.width
+						&& (currentRef.mime == null || currentRef.mime.equals(sourceFile.mime))) {
+					found = true;
 					continue;
-
-				boolean found = false;
-				for (FileReference currentRef : localFiles) {
-					if (currentRef.height == sourceFile.height && currentRef.width == sourceFile.width
-							&& (currentRef.mime == null || currentRef.mime.equals(sourceFile.mime))) {
-						found = true;
-						continue;
-					}
-				}
-
-				try {
-					if (!found)
-						src.downloadFile(obj, sourceFile, property);
-				} catch (Exception e) {
-					Trace.trace(Trace.ERROR, "Error downloading file: " + obj.getType() + ": " + obj.getId(), e);
 				}
 			}
-		}
 
-		// strip everything that's not remote - attachLocalResources will pick up everything local
-		FileReferenceList newList = new FileReferenceList();
-		for (FileReference ref : sourceFiles) {
-			if (ref.href.startsWith("http"))
-				newList.add(ref);
+			try {
+				if (!found)
+					src.downloadFile(obj, sourceFile, property);
+			} catch (Exception e) {
+				Trace.trace(Trace.ERROR, "Error downloading file: " + obj.getType() + ": " + obj.getId(), e);
+			}
 		}
-
-		return newList;
+		return false;
 	}
 
 	private static FileReferenceList getMediaList(List<Integer> in) {
@@ -378,12 +370,10 @@ public class PlaybackContest extends Contest {
 			Group g = (Group) obj;
 			if (g.isHidden()) {
 				for (ITeam team : getTeams()) {
-					if (team.getGroupIds() != null) {
-						for (String gId : team.getGroupIds()) {
-							if (gId.equals(g.getId()) && !team.isHidden()) {
-								((Team) team).add("hidden", "true");
-								add(team);
-							}
+					for (String gId : team.getGroupIds()) {
+						if (gId.equals(g.getId()) && !team.isHidden()) {
+							((Team) team).add("hidden", "true");
+							add(team);
 						}
 					}
 				}
@@ -410,21 +400,19 @@ public class PlaybackContest extends Contest {
 		}
 
 		ContestType type = obj.getType();
-		boolean configType = true; // should be false??
-		if (type == ContestType.CONTEST || type == ContestType.PROBLEM || type == ContestType.GROUP
-				|| type == ContestType.LANGUAGE || type == ContestType.JUDGEMENT_TYPE || type == ContestType.TEAM
-				|| type == ContestType.PERSON || type == ContestType.ORGANIZATION) {
+		boolean configType = true;
+		if (type == ContestType.PROBLEM || type == ContestType.GROUP || type == ContestType.LANGUAGE
+				|| type == ContestType.JUDGEMENT_TYPE || type == ContestType.TEAM || type == ContestType.PERSON
+				|| type == ContestType.ORGANIZATION) {
 			applyDefaults(obj);
 			configType = true;
 		}
 
 		if (!configurationLoaded) {
-			if (!configType)
+			if (type != ContestType.CONTEST && !configType)
 				configurationLoaded = true;
-			else {
-				applyDefaults(obj);
-				defaultConfig.add(obj);
-			}
+			else if (type != ContestType.CONTEST)
+				defaults.add(obj);
 		}
 
 		// if the CCS says the contest is stopped but doesn't support pause time, fix it
@@ -433,7 +421,7 @@ public class PlaybackContest extends Contest {
 			Info currentInfo = getInfo();
 			if (info.getStartTime() == null && info.getCountdownPauseTime() == null && !info.supportsCountdownPauseTime()
 					&& currentInfo != null)
-				info.setCountdownPauseTime(currentInfo.getCountdownPauseTime());
+				info.setCountdownPauseTime(currentInfo.getCountdownPauseTime()); // startTime
 		}
 
 		if (!isTesting) {
@@ -461,7 +449,7 @@ public class PlaybackContest extends Contest {
 				while (dt > 2500) {
 					// wait for 2s
 					try {
-						LockSupport.parkNanos(2000 * 1_000_000);
+						LockSupport.parkNanos(2000 * 1000000);
 					} catch (Exception e) {
 						// ignore
 					}
@@ -518,27 +506,20 @@ public class PlaybackContest extends Contest {
 	}
 
 	private void applyDefaults(IContestObject obj) {
-		IContestObject.ContestType type = obj.getType();
-		IContestObject def = null;
-		if (IContestObject.isSingleton(type)) {
-			IContestObject[] objs = defaultConfig.getObjects(type);
-			if (objs != null && objs.length == 1)
-				def = objs[0];
-		} else
-			def = defaultConfig.getObjectByTypeAndId(type, obj.getId());
-
-		if (def != null) {
-			Map<String, Object> props = def.getProperties();
-			Map<String, Object> existingProps = obj.getProperties();
-			for (String key : props.keySet()) {
-				boolean found = false;
-				for (String key2 : existingProps.keySet()) {
-					if (key2.equals(key))
-						found = true;
-				}
-
-				if (!found && (type != IContestObject.ContestType.CONTEST || !key.equals("start_time"))) {
-					((ContestObject) obj).add(key, props.get(key));
+		for (IContestObject de : defaults) {
+			if (de.equals(obj)) {
+				Map<String, Object> props = de.getProperties();
+				Map<String, Object> existingProps = obj.getProperties();
+				for (String key : props.keySet()) {
+					boolean found = false;
+					for (String key2 : existingProps.keySet()) {
+						if (key2.equals(key))
+							found = true;
+					}
+					if (!found) {
+						((ContestObject) obj).add(key, props.get(key));
+						// ((ContestObject) obj).cloneProperty(de, p);
+					}
 				}
 			}
 		}

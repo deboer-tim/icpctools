@@ -18,6 +18,12 @@ public class PropertiesPreferences extends AbstractPreferences {
 
 	protected PropertiesPreferences(String name) {
 		super(null, "");
+		/*try {
+			file = File.createTempFile("" +name, ".prefs");
+		} catch (Exception e) {
+			// TGG
+		}*/
+		// CDS name
 		file = new File(System.getProperty("java.io.tmpdir"), name + ".prefs");
 	}
 
