@@ -3,14 +3,11 @@ package org.icpc.tools.contest.model.internal.account;
 import org.icpc.tools.contest.model.IAccount;
 import org.icpc.tools.contest.model.IContestObject;
 import org.icpc.tools.contest.model.IDelete;
-import org.icpc.tools.contest.model.IProblem;
 import org.icpc.tools.contest.model.ISubmission;
-import org.icpc.tools.contest.model.internal.Problem;
 
 /**
  * Filter that adds things spectators can see compared to public/team area:
  * <ul>
- * <li>Problem test data count</li>
  * <li>Team desktop, webcams (until the freeze)</li>
  * <li>Team tool data, key log</li>
  * <li>Submission language</li>
@@ -41,13 +38,6 @@ public class SpectatorContest extends PublicContest {
 				super.add(obj);
 			}
 		}
-	}
-
-	@Override
-	protected IProblem filterProblem(IProblem problem) {
-		Problem p = (Problem) ((Problem) problem).clone();
-		p.setPackage(null);
-		return p;
 	}
 
 	@Override
