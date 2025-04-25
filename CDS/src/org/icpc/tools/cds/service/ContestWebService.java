@@ -130,7 +130,8 @@ public class ContestWebService extends HttpServlet {
 			cc.incrementWeb();
 			if (segments[1].equals("admin")) {
 				if (!cc.isAdmin(request)) {
-					response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+					response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+							"You're not an admin on this contest or don't have an account");
 					return;
 				}
 

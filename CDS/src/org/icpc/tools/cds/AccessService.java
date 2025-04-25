@@ -33,16 +33,19 @@ public class AccessService {
 			if ("team".equals(type)) {
 				caps.add("team_submit");
 				caps.add("team_clar");
+				caps.add("post_clar");
 			}
 			if ("judge".equals(type)) {
-				caps.add("admin_clar");
-				caps.add("commentary_submit");
+				caps.add("post_clar");
+				caps.add("post_comment");
 			}
 			if ("admin".equals(type)) {
 				caps.add("contest_start");
-				caps.add("admin_submit");
-				caps.add("admin_clar");
-				caps.add("commentary_submit");
+				caps.add("put_submit");
+				caps.add("put_clar");
+				caps.add("put_comment");
+				caps.add("post_clar");
+				caps.add("post_comment");
 			}
 		}
 		String user = request.getRemoteUser();

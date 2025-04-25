@@ -2,6 +2,9 @@ package org.icpc.tools.contest.model.internal;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileReader;
+import java.io.Reader;
+import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -466,10 +469,12 @@ public abstract class ContestObject implements IContestObject {
 		if (ref.data != null)
 			data = ref.data;
 		else if (forceLoad) {
+			System.err.print("loading: " + id + " " + ref.mime + " ");
 			data = loadImage(getFile(ref, property, true));
 			if (data == null)
 				data = MISSING_IMAGE;
 			ref.data = data;
+			System.err.println();
 		}
 
 		if (data == MISSING_IMAGE)
@@ -478,11 +483,13 @@ public abstract class ContestObject implements IContestObject {
 			if (data instanceof BufferedImage)
 				return ImageScaler.scaleImage((BufferedImage) data, width, height);
 			// else if (data instanceof SVGDocument)
+			System.out.println("svg found: " + id);
 			return resizeSVG((SVGDocument) data, width, height);
 		}
 		if (data instanceof BufferedImage)
 			return (BufferedImage) data;
 		// else if (data instanceof SVGDocument)
+		System.out.println("svg found 2: " + id);
 		return resizeSVG((SVGDocument) data, width, height);
 	}
 
@@ -500,9 +507,21 @@ public abstract class ContestObject implements IContestObject {
 	}
 
 	private static SVGDocument loadSVG(File svgFile) throws Exception {
+		System.err.print("load svg ");
 		String parser = XMLResourceDescriptor.getXMLParserClassName();
 		SAXSVGDocumentFactory factory = new SAXSVGDocumentFactory(parser);
-		return factory.createSVGDocument(svgFile.getAbsolutePath());
+		// InputStream in = new FileInputStream(svgFile);
+		// InputSource is = new InputSource(new ByteArrayInputStream(cond.getBytes()));
+		Reader r = new FileReader(svgFile, Charset.forName("us-ascii"));
+		try {
+			return factory.createSVGDocument("test", r);
+		} finally {
+			try {
+				r.close();
+			} catch (Exception e) {
+				//
+			}
+		}
 	}
 
 	private static BufferedImage resizeSVG(SVGDocument svg, int width, int height) {

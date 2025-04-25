@@ -59,9 +59,10 @@ public class YamlParser {
 					value = val.toString();
 
 				try {
-					if ("name".equals(key) && oldFormat)
+					if ("name".equals(key) && oldFormat) {
+						info.add("name", value);
 						info.add("formal_name", value);
-					else if ("short-name".equals(key))
+					} else if ("short-name".equals(key))
 						info.add("name", value);
 					else if ("length".equals(key) || "duration".equals(key)) {
 						long length = RelativeTime.parse(value);

@@ -412,6 +412,7 @@ public class ConfiguredContest {
 		}
 	}
 
+	// TODO filename required in fileref now
 	public Map<String, Map<StreamType, List<Integer>>> getStreams() {
 		return streamMap;
 	}

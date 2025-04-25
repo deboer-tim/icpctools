@@ -316,6 +316,8 @@ public abstract class AbstractChartPresentation extends Presentation {
 
 		double f = 0;
 		int numSeries = dataSeries.length;
+		// prior to contest: java.lang.ArrayIndexOutOfBoundsException: Index 0 out of bounds for
+		// length 0
 		int size = dataSeries[0].getLength();
 		for (int j = 0; j < numSeries; j++) {
 			for (int i = 0; i < size; i++)

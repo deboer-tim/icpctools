@@ -349,7 +349,7 @@ public class RESTContestSource extends DiskContestSource {
 				conn.setRequestProperty("If-None-Match", ref.etag);
 		}
 
-		int status = conn.getResponseCode();
+		int status = conn.getResponseCode(); // [err] java.net.SocketTimeoutException: Read timed out
 		sb.append(" (" + status + ")");
 
 		if (status == HttpURLConnection.HTTP_NOT_FOUND) {
@@ -547,8 +547,7 @@ public class RESTContestSource extends DiskContestSource {
 		}
 		try {
 			if (feedFile.getName().endsWith("xml")) {
-				XMLFeedParser parser2 = new XMLFeedParser();
-				parser2.parse(contest, in);
+				// error
 			} else {
 				NDJSONFeedParser parser2 = new NDJSONFeedParser();
 				parser2.parse(contest, in);

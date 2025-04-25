@@ -72,7 +72,7 @@ public class ContestFeedService {
 						remove();
 						return false;
 					}
-					if (count > 120) {
+					if (count > 120) { // huh?
 						writer.writeHeartbeat();
 						count = 0;
 					}

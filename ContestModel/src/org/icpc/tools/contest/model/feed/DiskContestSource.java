@@ -3,7 +3,6 @@ package org.icpc.tools.contest.model.feed;
 import java.awt.Dimension;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -81,7 +80,7 @@ public class DiskContestSource extends ContestSource {
 	private File root;
 	protected File cacheFolder;
 	private String contestId;
-	private Closeable parser;
+	private NDJSONFeedParser parser;
 	private Validation configValidation = new Validation();
 	private Map<String, List<FileReference>> cache = new HashMap<>();
 
@@ -824,13 +823,10 @@ public class DiskContestSource extends ContestSource {
 		}
 		try {
 			if (feedFile.getName().endsWith("xml")) {
-				XMLFeedParser xmlParser = new XMLFeedParser();
-				xmlParser.parse(contest, in);
-				parser = xmlParser;
+				// error
 			} else {
-				NDJSONFeedParser jsonParser = new NDJSONFeedParser();
-				jsonParser.parse(contest, in);
-				parser = jsonParser;
+				parser = new NDJSONFeedParser();
+				parser.parse(contest, in);
 			}
 		} catch (Exception e) {
 			Trace.trace(Trace.ERROR, "Error reading event feed", e);
